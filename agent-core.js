@@ -261,8 +261,21 @@ function formatPlan(steps) {
 }
 
 function updateHistory(messages) {
-  const turns = messages.filter(m => m.role === 'user' || m.role === 'assistant');
-  state.history = turns.slice(-MAX_HISTORY);
+  // Only save clean text exchanges — tool_use/tool_result pairs are session-only
+  // and cannot be safely replayed as history in future turns
+  const clean = [];
+  for (const msg of messages) {
+    if (msg.role === 'user' && typeof msg.content === 'string') {
+      clean.push(msg);
+    } else if (msg.role === 'assistant') {
+      const textBlock = Array.isArray(msg.content)
+        ? msg.content.find(b => b.type === 'text')
+        : null;
+      const text = typeof msg.content === 'string' ? msg.content : textBlock?.text;
+      if (text) clean.push({ role: 'assistant', content: text });
+    }
+  }
+  state.history = clean.slice(-MAX_HISTORY);
 }
 
 async function processMessage(text) {
