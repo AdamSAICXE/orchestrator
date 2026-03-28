@@ -1,0 +1,18 @@
+{
+  "name": "orchestrator",
+  "version": "1.0.0",
+  "description": "Master orchestrator agent coordinating Zoho and Motion sub-agents via Telegram",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.26.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.66.0",
+    "pg": "^8.11.0"
+  }
+}
