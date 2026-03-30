@@ -1,7 +1,7 @@
 require('dotenv').config();
 const Anthropic = require('@anthropic-ai/sdk');
 const { getAllMemories, searchMemories, saveMemory, logAction, getConfidenceScores } = require('./memory');
-const { callZohoAgent, callMotionAgent } = require('./sub-agents');
+const { callZohoAgent, callMotionAgent, callSlackAgent } = require('./sub-agents');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_HISTORY = 20;
@@ -32,6 +32,17 @@ const TOOLS = [
       type: 'object',
       properties: {
         question: { type: 'string', description: 'Natural language request for the Motion agent' }
+      },
+      required: ['question']
+    }
+  },
+  {
+    name: 'ask_slack_agent',
+    description: 'Search or read Slack messages. Use this to find internal conversations, check what was said in a channel, look up messages about a topic or person, or get recent activity from a specific channel.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string', description: 'Natural language request for the Slack agent' }
       },
       required: ['question']
     }
@@ -135,6 +146,7 @@ Today is ${date}.
 TOOLS:
 - ask_zoho_agent: Zoho CRM contacts/deals/notes/activities, Desk tickets, Flow workflows. Read + write.
 - ask_motion_agent: Motion tasks and projects. Read + write.
+- ask_slack_agent: Read Slack messages, search conversations, check channels. Read-only.
 - draft_email: Compose email drafts only — NEVER sends.
 - remember: Save preferences, account context, or learned behaviors to persistent memory.
 - recall: Search persistent memory.
@@ -168,6 +180,9 @@ async function executeTool(name, input) {
 
     case 'ask_motion_agent':
       return await callMotionAgent(input.question);
+
+    case 'ask_slack_agent':
+      return await callSlackAgent(input.question);
 
     case 'draft_email':
       return [

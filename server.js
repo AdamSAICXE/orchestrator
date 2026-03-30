@@ -5,11 +5,33 @@ const { initDB } = require('./memory');
 const { processMessage } = require('./agent-core');
 
 const AUTHORIZED_USER_ID = parseInt(process.env.TELEGRAM_USER_ID, 10);
+const REST_AUTH_TOKEN = process.env.REST_AUTH_TOKEN;
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 const app = express();
 
 app.use(express.json());
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'orchestrator' }));
+
+function requireAuth(req, res, next) {
+  const token = req.headers['x-auth-token'] || req.body?.token || req.query?.token;
+  if (!REST_AUTH_TOKEN || token !== REST_AUTH_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.post('/query', requireAuth, async (req, res) => {
+  const { question } = req.body;
+  if (!question) return res.status(400).json({ error: 'question is required' });
+
+  try {
+    const response = await processMessage(question);
+    res.json({ response });
+  } catch (err) {
+    console.error('[REST ERROR]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Keep typing indicator alive during long operations
 function startTyping(chatId) {

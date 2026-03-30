@@ -32,4 +32,21 @@ async function callMotionAgent(question) {
   }
 }
 
-module.exports = { callZohoAgent, callMotionAgent };
+async function callSlackAgent(question) {
+  try {
+    const res = await axios.post(
+      `${process.env.SLACK_AGENT_URL}/query`,
+      { question },
+      {
+        headers: { 'x-auth-token': process.env.SLACK_AGENT_TOKEN },
+        timeout: 45000
+      }
+    );
+    return res.data.response || 'Slack agent returned no response.';
+  } catch (err) {
+    const msg = err.response?.data?.error || err.message;
+    return `Slack agent error: ${msg}`;
+  }
+}
+
+module.exports = { callZohoAgent, callMotionAgent, callSlackAgent };
