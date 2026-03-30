@@ -110,7 +110,7 @@ const TOOLS = [
   }
 ];
 
-function buildSystemPrompt(memories, confidenceScores) {
+function buildSystemPrompt(memories, confidenceScores, voice = false) {
   const date = new Date().toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
@@ -170,7 +170,12 @@ RESPONSE STYLE:
 - Numbered lists for plans, bullet points for results.
 - When reporting execution, lead with what was done.
 - When uncertain about intent, ask one clarifying question.
-${memorySection}${confidenceSection}`;
+${voice ? `
+VOICE MODE — this request came from Siri and will be read aloud:
+- For answers and information: respond in 1 to 3 natural spoken sentences. No bullet points, no headers, no markdown.
+- For actions taken: be slightly more detailed and confirm exactly what was done in plain spoken language (e.g. "I created a follow-up task with Seth in Motion for tomorrow at 2pm").
+- Never use formatting symbols like asterisks, dashes, pound signs, or backticks.
+` : ''}${memorySection}${confidenceSection}`;
 }
 
 async function executeTool(name, input) {
@@ -293,7 +298,7 @@ function updateHistory(messages) {
   state.history = clean.slice(-MAX_HISTORY);
 }
 
-async function processMessage(text) {
+async function processMessage(text, voice = false) {
   const normalized = text.trim().toLowerCase();
 
   // Handle pending approval response
@@ -337,7 +342,7 @@ async function processMessage(text) {
     getAllMemories(),
     getConfidenceScores()
   ]);
-  const systemPrompt = buildSystemPrompt(memories, confidenceScores);
+  const systemPrompt = buildSystemPrompt(memories, confidenceScores, voice);
 
   const messages = [
     ...state.history,

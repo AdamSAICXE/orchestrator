@@ -21,11 +21,11 @@ function requireAuth(req, res, next) {
 }
 
 app.post('/query', requireAuth, async (req, res) => {
-  const { question } = req.body;
+  const { question, voice } = req.body;
   if (!question) return res.status(400).json({ error: 'question is required' });
 
   try {
-    const response = await processMessage(question);
+    const response = await processMessage(question, voice === true);
     res.json({ response });
   } catch (err) {
     console.error('[REST ERROR]', err.message);
