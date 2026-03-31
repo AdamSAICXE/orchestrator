@@ -6,7 +6,7 @@ const { processMessage } = require('./agent-core');
 
 const AUTHORIZED_USER_ID = parseInt(process.env.TELEGRAM_USER_ID, 10);
 const REST_AUTH_TOKEN = process.env.REST_AUTH_TOKEN;
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
 const app = express();
 
 app.use(express.json());
@@ -98,9 +98,14 @@ bot.on('message', async (msg) => {
   }
 });
 
-bot.on('polling_error', (err) => console.error('Telegram polling error:', err.message));
+// Telegram webhook endpoint — Telegram POSTs updates here instead of us polling
+app.post('/webhook/telegram', (req, res) => {
+  res.sendStatus(200); // Acknowledge immediately
+  bot.processUpdate(req.body);
+});
 
 const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL;
 
 async function start() {
   try {
@@ -109,6 +114,15 @@ async function start() {
       console.log(`Orchestrator running on port ${PORT}`);
       console.log(`Telegram bot active — authorized user: ${AUTHORIZED_USER_ID}`);
     });
+
+    // Register webhook with Telegram so it knows where to send updates
+    if (BASE_URL) {
+      const webhookUrl = `${BASE_URL}/webhook/telegram`;
+      await bot.setWebHook(webhookUrl);
+      console.log(`Telegram webhook set: ${webhookUrl}`);
+    } else {
+      console.warn('BASE_URL not set — Telegram webhook not registered. Set BASE_URL to your public Railway URL.');
+    }
   } catch (err) {
     console.error('Failed to start:', err);
     process.exit(1);
